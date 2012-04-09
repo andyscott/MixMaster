@@ -53,21 +53,17 @@ public class MixMaster {
     
     protected String className;
     
-    @Override
-    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-      this.className = name;
-      System.out.println("C " + className);
+    public MixAdapter(ClassVisitor cv) {
+      super(cv);
     }
     
     @Override
-    public void visitInnerClass(String name, String outerName, String innerName, int access) {
-      System.out.println("INNER " + innerName);
-      super.visitInnerClass(name, outerName, innerName, access);
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+      this.className = name;
     }
 
     @Override
     public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
-      System.out.println("GRR " + name);
       if ("<init>".equals(name)) {
         
         if (initNode == null) {
@@ -100,13 +96,7 @@ public class MixMaster {
     }
 
     @Override
-    public void visitEnd() {
-    }
-
-    public MixAdapter(ClassVisitor cv) {
-      super(cv);
-    }
-    
+    public void visitEnd() { }
   }
   
   public MixMaster(String name, ClassVisitor cv) {
@@ -138,20 +128,20 @@ public class MixMaster {
     String[] exceptions = new String[initNode.exceptions.size()];
     initNode.exceptions.toArray(exceptions);
     MethodVisitor mv = cv.visitMethod(access,
-            initNode.name,
-            initNode.desc,
-            initNode.signature,
-            exceptions);
+      initNode.name,
+      initNode.desc,
+      initNode.signature,
+      exceptions);
     
     initNode.accept(
-        new AdviceAdapter(mv, initNode.access, initNode.name, initNode.desc) {
-          @Override
-          protected void onMethodEnter() {
-            for (String initMethod : initMethods) {
-              visitIntInsn(ALOAD, 0);
-              visitMethodInsn(Opcodes.INVOKESPECIAL, MixMaster.this.name, initMethod, initNode.desc);
-            }
+      new AdviceAdapter(mv, initNode.access, initNode.name, initNode.desc) {
+        @Override
+        protected void onMethodEnter() {
+          for (String initMethod : initMethods) {
+            visitIntInsn(ALOAD, 0);
+            visitMethodInsn(Opcodes.INVOKESPECIAL, MixMaster.this.name, initMethod, initNode.desc);
           }
+        }
     });
     
     cv.visitEnd();
